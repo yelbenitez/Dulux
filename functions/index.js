@@ -22,13 +22,23 @@ app.middleware((conv)=>{
 exports.fulfillment = functions.https.onRequest((request,response)=>{
     const agent = new WebhookClient({request,response});
 
+    //Backend functions ///////////////////////////////////////////
+
+    function readData(project,agent){
+        return admin.database().ref( project + '/validation').once('value').then(function(snapshot){// working get
+            agent.add(JSON.stringify(snapshot.val()));
+        });
+    }
+
+    // Intent ////////////////////////////////////////////////////
+
     function Welcome(agent) {
         const initMessage = `Welcome to the Dulux Genie.
         I’m here to help you take on your 
         project, although you’ll have to 
         take on the painting yourself.
         To start off, what project do you 
-        need help with13`;   
+        need help with`;   
         agent.add(initMessage);
     }
 
@@ -37,7 +47,9 @@ exports.fulfillment = functions.https.onRequest((request,response)=>{
          const param_descrption = agent.parameters.Description
         
         const project_type = request.body.queryResult.outputContexts[1].parameters["Project.original"]; // getting the context from JSON request of dflow 
-     
+        return readData(project_type,agent)
+      //  agent.add("Nice, a " + project_type + ". Is your " + project_type + " Indoor or outdoor?"); 
+        
         /*
         if(param_description == ""){
           //      const context = agent.setContext('Project_type');
@@ -82,19 +94,6 @@ app.intent('Find Project', (conv)=>{
         return readRequest(conv);
 });
 */
-
-function readRequest(conv) {
-    request.post(
-        { json: { key: 'value' } },
-        function (error, response, body) {
-            if (!error && response.statusCode == 200) {
-                conv.ask(body);
-            }else{
-                conv.ask(body);
-            }
-        }
-    );
-}
 
 function writeUserData(userId, name, email) {   //data insert working
     admin.database().ref('users/' + userId).set({
